@@ -1,0 +1,20 @@
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "nxpython"
+version = "0.0.1"
+description = "Testing custom nx package"
+readme = "README.md"
+requires-python = ">=3.9"
+
+authors = [
+  { name = "EvanLin3141", email = "evan.lin.3.141@gmail.com" }
+]
+
+[tool.setuptools]
+package-dir = { "" = "src" }
+
+[tool.setuptools.packages.find]
+where = ["src"]
