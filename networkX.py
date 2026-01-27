@@ -6,7 +6,7 @@ import networkx as nx
 
 G = nx.Graph()
 
-G.add_node(1)
+G.add_node(1,2,3,4)
 G.add_nodes_from([2, 3])
 G.add_nodes_from([(4, {"color": "red"}), (5, {"color": "green"})])
 
@@ -45,3 +45,4 @@ print(list(G.neighbors(1)))
 print(G.degree[1])
 bfsNodes = list(nx.dfs_tree(G,1))
 print(bfsNodes)
+print(G)
