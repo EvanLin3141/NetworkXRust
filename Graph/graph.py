@@ -92,7 +92,36 @@ class Graph:
 
     #def __str__ (self):
     #    return
-        
+
+    def __len__(self):
+        return len(self.node)
+    
+    def __iter__(self):
+        return iter(self.node)
+    
+    def __contains__(self, n):
+        try:
+            return n in self._node
+        except TypeError:
+            return False
+
+    def __len__(self):
+        return len(self._node)
+
+    def __getitem__(self, n):
+        return self.adj[n]
+
+
+    def neighbour(self, node):
+
+        try:
+            return iter(self.adj_outer[node])
+        except KeyError as err:
+            raise ValueError(f"The node {node} is not in the graph.") from err
+
+    @property
+    def adj(self):
+        return self.adj_outer
 
 
 
