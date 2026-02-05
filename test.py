@@ -2,7 +2,8 @@ from Graph.graph import *
 import networkx as nx
 from traversal.dfs import *
 from traversal.bfs import *
-from tree.mst import *
+from mst import *
+from shortestPath.dijsktra import *
 graph = nx.Graph()
 """
 mgraph = nx.MultiGraph()
@@ -156,4 +157,22 @@ mst = list(prim_mst_edges(V, weight="weight", data=True))
 
 for u, v, attr in mst:
     print(f"{u} -- {v}, weight = {attr['weight']}")
+
+
+X = nx.Graph()
+X.add_weighted_edges_from([
+    ("A", "B", 1),
+    ("A", "C", 4),
+    ("B", "C", 1),
+    ("B", "D", 2),
+    ("C", "D", 1),
+])
+
+sources = ["A", "D"]
+
+dist = dijkstra_path(X, sources[0],sources[1])
+print(dist)
+
+dist = multi_source_dijkstra(X, "A", "D")
+print(dist)
 
