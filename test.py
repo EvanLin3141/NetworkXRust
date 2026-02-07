@@ -117,62 +117,87 @@ print(dict(graph.adj_outer))
 # print("\nFull adjacency dict:")
 # print(G.adj)
 
-G = Graph()
+# G = Graph()
 
-# Add edges (undirected by your add_edge implementation)
-G.add_edge("A", "B", weight=1)
-G.add_edge("B", "C", weight=2)
-G.add_edge("C", "D", weight=3)
-G.add_edge("A", "C", weight=4)
-G.add_edge("B", "D", weight=5)
-mst_edges = list(prim_mst_edges(G, weight="weight", data=True))
+# # Add edges (undirected by your add_edge implementation)
+# G.add_edge("A", "B", weight=1)
+# G.add_edge("B", "C", weight=2)
+# G.add_edge("C", "D", weight=3)
+# G.add_edge("A", "C", weight=4)
+# G.add_edge("B", "D", weight=5)
+# mst_edges = list(prim_mst_edges(G, weight="weight", data=True))
 
-# for u, v, attr in mst_edges:
+# # for u, v, attr in mst_edges:
+# #     print(f"{u} -- {v}, weight = {attr['weight']}")
+    
+    
+# V = Graph()
+
+# edges = [
+#     ("A", "B", 4),
+#     ("A", "C", 3),
+#     ("B", "C", 1),
+#     ("B", "D", 2),
+#     ("C", "D", 4),
+#     ("C", "E", 2),
+#     ("D", "F", 3),
+#     ("E", "F", 1),
+#     ("E", "G", 5),
+#     ("F", "H", 2),
+#     ("G", "H", 3),
+#     ("H", "I", 4),
+#     ("I", "J", 1),
+#     ("H", "J", 6),
+# ]
+
+# for u, v, w in edges:
+#     V.add_edge(u, v, weight=w)
+
+# mst = list(prim_mst_edges(V, weight="weight", data=True))
+
+# for u, v, attr in mst:
 #     print(f"{u} -- {v}, weight = {attr['weight']}")
-    
-    
-V = Graph()
 
-edges = [
-    ("A", "B", 4),
-    ("A", "C", 3),
-    ("B", "C", 1),
-    ("B", "D", 2),
-    ("C", "D", 4),
-    ("C", "E", 2),
-    ("D", "F", 3),
-    ("E", "F", 1),
-    ("E", "G", 5),
-    ("F", "H", 2),
-    ("G", "H", 3),
-    ("H", "I", 4),
-    ("I", "J", 1),
-    ("H", "J", 6),
-]
+
+# X = Graph()
+# edges = [
+#     ("A", "B", 1),
+#     ("A", "C", 4),
+#     ("B", "C", 1),
+#     ("B", "D", 2),
+#     ("C", "D", 1),
+# ]
+
+# for u, v, w in edges:
+#     X.add_edge(u, v, weight=w)
+
+# sources = ["A", "D"]
+
+# dist = dijkstra_path(X, sources[0],sources[1])
+# print(dist)
+
+# dist = multi_source_dijkstra(X, "A", "D")
+# print(dist)
+from floyd import *
+
+H = Graph()
+edges =[
+        ("s", "u", 10),
+        ("s", "x", 5),
+        ("u", "v", 1),
+        ("u", "x", 2),
+        ("v", "y", 1),
+        ("x", "u", 3),
+        ("x", "v", 5),
+        ("x", "y", 2),
+        ("y", "s", 7),
+        ("y", "v", 6),
+    ]
 
 for u, v, w in edges:
-    V.add_edge(u, v, weight=w)
+    H.add_edge(u, v, weight=w)  
 
-mst = list(prim_mst_edges(V, weight="weight", data=True))
-
-for u, v, attr in mst:
-    print(f"{u} -- {v}, weight = {attr['weight']}")
-
-
-X = nx.Graph()
-X.add_weighted_edges_from([
-    ("A", "B", 1),
-    ("A", "C", 4),
-    ("B", "C", 1),
-    ("B", "D", 2),
-    ("C", "D", 1),
-])
-
-sources = ["A", "D"]
-
-dist = dijkstra_path(X, sources[0],sources[1])
-print(dist)
-
-dist = multi_source_dijkstra(X, "A", "D")
-print(dist)
-
+predecessors, distance = floyd_warshall(H)
+print(distance)
+print("")
+print(predecessors)

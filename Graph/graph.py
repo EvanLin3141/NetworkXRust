@@ -101,12 +101,12 @@ class Graph:
     
     def __contains__(self, n):
         try:
-            return n in self._node
+            return n in self.node
         except TypeError:
             return False
 
     def __len__(self):
-        return len(self._node)
+        return len(self.node)
 
     def __getitem__(self, n):
         return self.adj[n]
@@ -122,6 +122,18 @@ class Graph:
     @property
     def adj(self):
         return self.adj_outer
+    
+    def edges(self, data=False):
+        seen = set()
+        for u in self.adj_outer:
+            for v in self.adj_outer[u]:
+                if (v,u) in seen:
+                    continue
+                seen.add((u,v))
+                if data:
+                    yield u,v, self.adj_outer[u][v]
+                else:
+                    yield u,v
 
 
 
