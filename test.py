@@ -1,8 +1,6 @@
-from Graph.graph import *
-import networkx as nx
+from Graph.Graph import *
 from traversal.dfs import *
 from traversal.bfs import *
-from mst import *
 from shortestPath.dijsktra import *
 graph = nx.Graph()
 """

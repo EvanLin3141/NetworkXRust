@@ -73,7 +73,7 @@ class Graph:
             self.adj_outer[v] = self.adj_inner()
             self.node[v] = self.node_attr()
 
-        neighbourDict = self.adj_outer[u].get(v, self.edge_attr())  # Gets all neighbor of U
+        neighbourDict = self.adj_outer[u].get(v, self.edge_attr())  # Gets the neigh V and its attr
         neighbourDict.update(edge_attr)                             # Update the additional edge attribute
         self.adj_outer[u][v] = neighbourDict                        # Update on "U"
         self.adj_outer[v][u] = neighbourDict                        # Update on "V"
