@@ -86,6 +86,14 @@ where
             nbr_dict.extend(attr)
         }
     }
+
+    pub fn neighbors(&self, node: &N) -> Result<impl Iterator<Item = &N>, String> {
+        self.adj_outer
+            .get(node)
+            .map(|m| m.keys())
+            .ok_or_else(|| "Node is not in the graph.".to_string())
+    }
+
 }
 
 

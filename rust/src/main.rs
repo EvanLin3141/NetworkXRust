@@ -1,9 +1,11 @@
 mod graph;
 mod traversal;
 
+use std::time::Instant;
 use crate::graph::nx_graph::{AttrValue, Graph};
 
 use traversal::dfs::dfs_edges;
+use traversal::bfs::bfs_edges;
 
 fn main() {
     let mut g = Graph::<String>::new([
@@ -69,8 +71,18 @@ fn main() {
             ("relation".to_string(), AttrValue::Text("connected".to_string())),
         ],
     );
-    let edges = dfs_edges(&g, Some("A".to_string()), None);
 
-    println!("DFS edges: {:?}", edges);
+    let start = Instant::now();
+    for _ in 0..100000 {
+        dfs_edges(&g, Some("A".to_string()), None);
+    }
+    println!("Avg: {:?}", start.elapsed() / 100000);
+    
+    let start = Instant::now();
+    for _ in 0..100000 {
+        let _ = bfs_edges(&g, Some("A".to_string()), None);
+    }
+    println!("Avg: {:?}", start.elapsed() / 100000);
+
 
 }

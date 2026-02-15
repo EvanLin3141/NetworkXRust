@@ -63,11 +63,11 @@ where
         let id = self.get_id(key);
         self.node[id].extend(attrs);
     }
-
-    pub fn neighbors(&self, node:N) -> Vec<N> {
+    
+    pub fn neighbors(&self, node: &N) -> Vec<N> {
         self.adj_outer
-            .get(n)
-            .map(|m| m.keys().clone().collect())
+            .get(node)
+            .map(|m| m.keys().cloned().collect())
             .unwrap_or_default()
     }
 
