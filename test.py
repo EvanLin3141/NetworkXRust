@@ -2,6 +2,7 @@ from Graph.Graph import *
 from traversal.dfs import *
 from traversal.bfs import *
 from shortestPath.dijsktra import *
+from networkX import *
 graph = nx.Graph()
 """
 mgraph = nx.MultiGraph()

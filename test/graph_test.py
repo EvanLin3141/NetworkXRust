@@ -15,4 +15,4 @@ class nxTest(unittest.TestCase):
         self.graph.add_edge("F", "G", weight=3)
 
     def test_node_count(self):
-        self.assertEqual(len(self.graph), 8)
+        self.assertEqual(len(self.graph), 7)

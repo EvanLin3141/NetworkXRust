@@ -1,11 +1,5 @@
 #Iterate over edges in a depth-first-search (DFS)
 def dfs_edges(G, source=None, depth_limit=None, *, sort_neighbours=None):
-    
-    """
-    Yield will be used for memory efficiency, however if can't be implemented
-    on rust we will use an additional list instead.
-    """
-
     if source is None:
         source = G
     else:
