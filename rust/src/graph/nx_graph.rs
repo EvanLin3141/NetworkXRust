@@ -94,6 +94,14 @@ where
             .ok_or_else(|| "Node is not in the graph.".to_string())
     }
 
+    pub fn get_weight(&self, attr: &AttrMap, weight_key: &str) -> Option<f64> {
+        match attr.get(weight_key) {
+            Some(AttrValue::Float(w)) => Some(*w),
+            Some(AttrValue::Int(w)) => Some(*w as f64),
+            _ => None, // missing or wrong type
+        }
+    }
+
 }
 
 

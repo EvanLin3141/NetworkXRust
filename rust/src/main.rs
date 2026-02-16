@@ -1,11 +1,14 @@
 mod graph;
 mod traversal;
+mod shortest_path;
 
 use std::time::Instant;
 use crate::graph::nx_graph::{AttrValue, Graph};
 
 use traversal::dfs::dfs_edges;
 use traversal::bfs::bfs_edges;
+use shortest_path::mst::prim_mst_edges;
+
 
 fn main() {
     let mut g = Graph::<String>::new([
@@ -84,5 +87,9 @@ fn main() {
     }
     println!("Avg: {:?}", start.elapsed() / 100000);
 
+    for _ in 0..100000 {
+        let _ = prim_mst_edges(&g, "weight", false);
+    }
 
+    println!("Avg: {:?}", start.elapsed() / 100000);
 }

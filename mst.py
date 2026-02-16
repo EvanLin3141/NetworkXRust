@@ -3,13 +3,10 @@ from enum import Enum
 from heapq import heappop, heappush
 from itertools import count
 from math import isnan
-from operator import itemgetter
-from queue import PriorityQueue
 
 def prim_mst_edges(G, weight="weight", keys=True, data=True, ignore_nan=False):
     # minimum shouldve been added but removed for now
     #is_multigraph = G.is_multigraph()          #todo#
-    
     nodes = set(G)
     c = count()
     
@@ -18,10 +15,7 @@ def prim_mst_edges(G, weight="weight", keys=True, data=True, ignore_nan=False):
     while nodes:
         u = nodes.pop()
         priorityQueue = []
-        visited = {u}
-        
-        # if is_multigraph:
-        #     todo:
+
         
         for nbr, attr in G.adj[u].items():
             edgeWeight =attr.get(weight, 1)
@@ -41,12 +35,14 @@ def prim_mst_edges(G, weight="weight", keys=True, data=True, ignore_nan=False):
             
             if nbr in visited or nbr not in nodes:
                 continue
+            '''
             # if is_multigraph and keys:
             #     if data:
             #         yield u, nbr, k,attr
             #     else:
             #         yield u, nbr, k
             # else:
+            '''
             if data:
                 yield u, nbr,attr
             else:
@@ -55,6 +51,7 @@ def prim_mst_edges(G, weight="weight", keys=True, data=True, ignore_nan=False):
             # Update Frontier
             visited.add(nbr)
             nodes.discard(nbr)
+            '''
             # if is_multigraph:
             #     for w, keydict in G.adjattr].items():
             #         if w in visited:
@@ -67,7 +64,7 @@ def prim_mst_edges(G, weight="weight", keys=True, data=True, ignore_nan=False):
             #                 msg = f"NaN found as an edge weight. Edge {attr, w, k2, d2)}"
             #                 raise ValueError(msg)
             #             heappush(frontier, (new_weight, next(c),attr, w, k2, d2))
-            # else:
+            # else:'''
             for secondNbr, v2 in G.adj[nbr].items():
                 if secondNbr in visited:
                     continue

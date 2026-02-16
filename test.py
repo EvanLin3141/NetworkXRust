@@ -3,7 +3,6 @@ from traversal.dfs import *
 from traversal.bfs import *
 from shortestPath.dijsktra import *
 from networkX import *
-graph = nx.Graph()
 """
 mgraph = nx.MultiGraph()
 
@@ -177,26 +176,55 @@ print(dict(graph.adj_outer))
 
 # dist = multi_source_dijkstra(X, "A", "D")
 # print(dist)
-from floyd import *
+# from floyd import *
 
-H = Graph()
-edges =[
-        ("s", "u", 10),
-        ("s", "x", 5),
-        ("u", "v", 1),
-        ("u", "x", 2),
-        ("v", "y", 1),
-        ("x", "u", 3),
-        ("x", "v", 5),
-        ("x", "y", 2),
-        ("y", "s", 7),
-        ("y", "v", 6),
-    ]
+# H = Graph()
+# edges =[
+#         ("s", "u", 10),
+#         ("s", "x", 5),
+#         ("u", "v", 1),
+#         ("u", "x", 2),
+#         ("v", "y", 1),
+#         ("x", "u", 3),
+#         ("x", "v", 5),
+#         ("x", "y", 2),
+#         ("y", "s", 7),
+#         ("y", "v", 6),
+#     ]
 
-for u, v, w in edges:
-    H.add_edge(u, v, weight=w)  
+# for u, v, w in edges:
+#     H.add_edge(u, v, weight=w)  
 
-predecessors, distance = floyd_warshall(H)
-print(distance)
-print("")
-print(predecessors)
+# predecessors, distance = floyd_warshall(H)
+# print(distance)
+# print("")
+# print(predecessors)
+import time
+import networkx as nx
+
+# --- Build graph (undirected, like your Rust add_edge adds both directions) ---
+G = Graph()
+
+# Graph-level attributes
+G.graph["name"] = "nxGraph"
+
+# Node attributes
+G.add_node("A", color="amber")
+G.add_node("B", color=True)  # matches your Bool(true) example
+
+# Edges + attributes
+G.add_edge("A", "B", weight=5, relation="friend")
+G.add_edge("A", "C", weight=2, relation="colleague")
+G.add_edge("B", "D", weight=7, cost=1.5)
+G.add_edge("B", "E", weight=1, enabled=False)
+G.add_edge("C", "F", weight=9, relation="family")
+G.add_edge("E", "F", weight=3, relation="connected")
+
+import timeit
+time_taken = timeit.timeit(
+    "list(dfs_edges(G, source='A'))",
+    globals=globals(),
+    number=100000
+)
+print("Avg:", time_taken / 100000)
+
