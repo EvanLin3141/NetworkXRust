@@ -1,4 +1,4 @@
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 use std::hash::Hash;
 
 
@@ -102,6 +102,24 @@ where
         }
     }
 
+    pub fn edges(&self, data: bool) -> Vec<(N, N, Option<AttrMap>)> {
+        let mut result = Vec::new();
+        let mut seen: HashSet<(N,N)> = HashSet::new();
+        for (u, nbrs) in &self.adj_outer {
+            for (v, attr) in nbrs {
+                if seen.contains(&(v.clone(), u.clone())) {
+                    continue;
+                }
+                seen.insert((u.clone(), v.clone()));
+                if data {
+                    result.push((u.clone(), v.clone(), Some(attr.clone())));
+                } else {
+                    result.push((u.clone(), v.clone(), None));
+                }
+            }
+        }
+        result
+    }
 }
 
 

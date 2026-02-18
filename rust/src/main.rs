@@ -9,6 +9,7 @@ use traversal::dfs::dfs_edges;
 use traversal::bfs::bfs_edges;
 use shortest_path::mst::prim_mst_edges;
 use shortest_path::dijkstra::dijkstra_path;
+use shortest_path::floyd::floyd_warshall;
 
 
 fn main() {
@@ -76,6 +77,7 @@ fn main() {
         ],
     );
 
+    println!("Analysing each algorithm in NX structure with 100,000 iterations");
     let start = Instant::now();
     for _ in 0..100000 {
         dfs_edges(&g, Some("A".to_string()), None);
@@ -112,5 +114,20 @@ fn main() {
         let _ = dijkstra_path(&g, &source, &dst);
     }
     println!("Avg: {:?}", start.elapsed() / 100000);
+
+    let (_, dist) = floyd_warshall(&g, "weight").unwrap();
+    println!("Distances:");
+    for (u, row) in &dist {
+        for (v, d) in row {
+            println!("{} -> {} = {}", u, v, d);
+        }
+    }
+
+    // 10 times less data
+    let start = Instant::now();
+    for _ in 0..10000 {
+        let (_, _) = floyd_warshall(&g, "weight").unwrap();
+    }
+    println!("Avg: {:?}, with 10 times less data", start.elapsed() / 100000);
 
 }
