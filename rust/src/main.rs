@@ -8,6 +8,7 @@ use crate::graph::nx_graph::{AttrValue, Graph};
 use traversal::dfs::dfs_edges;
 use traversal::bfs::bfs_edges;
 use shortest_path::mst::prim_mst_edges;
+use shortest_path::dijkstra::dijkstra_path;
 
 
 fn main() {
@@ -92,4 +93,24 @@ fn main() {
     }
 
     println!("Avg: {:?}", start.elapsed() / 100000);
+
+    
+    let source = "A".to_string();
+    let dst  = "D".to_string();
+
+    match dijkstra_path(&g, &source, &dst) {
+        Ok(Some((cost, path))) => {
+            println!("Shortest cost: {}", cost);
+            println!("Path: {:?}", path);
+        }
+        Ok(None) => println!("No path found."),
+        Err(e) => println!("Error: {}", e),
+    }
+
+    let start = Instant::now();
+    for _ in 0..100000 {
+        let _ = dijkstra_path(&g, &source, &dst);
+    }
+    println!("Avg: {:?}", start.elapsed() / 100000);
+
 }
