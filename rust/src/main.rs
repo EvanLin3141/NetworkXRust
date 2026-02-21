@@ -6,7 +6,9 @@ use std::time::Instant;
 use crate::graph::nx_graph::{AttrValue, Graph};
 
 use traversal::dfs::dfs_edges;
+use traversal::dfs::dfs_edges_ref;
 use traversal::bfs::bfs_edges;
+use traversal::bfs::bfs_edges_ref;
 use shortest_path::mst::prim_mst_edges;
 use shortest_path::dijkstra::dijkstra_path;
 use shortest_path::floyd::floyd_warshall;
@@ -82,13 +84,41 @@ fn main() {
     for _ in 0..100000 {
         dfs_edges(&g, Some("A".to_string()), None);
     }
-    println!("Avg: {:?}", start.elapsed() / 100000);
+    println!("DFS with Cloning -> Avg: {:?}", start.elapsed() / 100000);
+
+    let source: &String = match g.node.get_key_value("A") {
+        Some((k, _)) => k,
+        None => {
+            eprintln!("source not found");
+            return;
+        }
+    };
+
+    let start = Instant::now();
+    for _ in 0..100000 {
+        let _ = dfs_edges_ref(&g, source, None);
+    }
+    println!("DFS No Cloning -> Avg: {:?}", start.elapsed() / 100000);
     
     let start = Instant::now();
     for _ in 0..100000 {
         let _ = bfs_edges(&g, Some("A".to_string()), None);
     }
-    println!("Avg: {:?}", start.elapsed() / 100000);
+    println!("BFS with Cloning -> Avg: {:?}", start.elapsed() / 100000);
+
+    let source: &String = match g.node.get_key_value("A") {
+        Some((k, _)) => k,
+        None => {
+            eprintln!("source not found");
+            return;
+        }
+    };
+
+    let start = Instant::now();
+    for _ in 0..100000 {
+        let _ = bfs_edges_ref(&g, source, None);
+    }
+    println!("BFS No Cloning -> Avg: {:?}", start.elapsed() / 100000);
 
     for _ in 0..100000 {
         let _ = prim_mst_edges(&g, "weight", false);
@@ -115,13 +145,13 @@ fn main() {
     }
     println!("Avg: {:?}", start.elapsed() / 100000);
 
-    let (_, dist) = floyd_warshall(&g, "weight").unwrap();
-    println!("Distances:");
-    for (u, row) in &dist {
-        for (v, d) in row {
-            println!("{} -> {} = {}", u, v, d);
-        }
-    }
+    // let (_, dist) = floyd_warshall(&g, "weight").unwrap();
+    // println!("Distances:");
+    // for (u, row) in &dist {
+    //     for (v, d) in row {
+    //         println!("{} -> {} = {}", u, v, d);
+    //     }
+    // }
 
     // 10 times less data
     let start = Instant::now();
