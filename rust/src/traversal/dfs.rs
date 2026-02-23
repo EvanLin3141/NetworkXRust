@@ -19,11 +19,11 @@ where
     };
 
     let get_children = |n: &N| -> std::vec::IntoIter<N> {
-        let mut kids: Vec<N> = g.adj_outer
+        let kids: Vec<N> = g.adj_outer
             .get(n)
             .map(|m| m.keys().cloned().collect())
             .unwrap_or_default();
-        kids.sort(); 
+        // kids.sort(); 
         kids.into_iter()
     };
 
@@ -67,12 +67,12 @@ where
     let start: &'a N = source;
 
     let get_children = |n: &'a N| -> std::vec::IntoIter<&'a N> {
-        let mut kids: Vec<&'a N> = g
+        let kids: Vec<&'a N> = g
             .adj_outer
             .get(n)
             .map(|m| m.keys().collect())
             .unwrap_or_default();
-        kids.sort();
+        // kids.sort();
         kids.into_iter()
     };
 
@@ -81,13 +81,11 @@ where
 
     visited.insert(start);
 
-    // Stack holds: (node, iterator over its children, depth)
     let mut stack: Vec<(&'a N, std::vec::IntoIter<&'a N>, usize)> = Vec::new();
     stack.push((start, get_children(start), 0));
 
     while let Some((parent, mut children, depth)) = stack.pop() {
         if let Some(child) = children.next() {
-            // resume parent later
             stack.push((parent, children, depth));
 
             if visited.insert(child) {

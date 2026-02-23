@@ -10,6 +10,7 @@ use traversal::dfs::dfs_edges_ref;
 use traversal::bfs::bfs_edges;
 use traversal::bfs::bfs_edges_ref;
 use shortest_path::mst::prim_mst_edges;
+use shortest_path::mst_ref::prim_mst_edges_ref;
 use shortest_path::dijkstra::dijkstra_path;
 use shortest_path::floyd::floyd_warshall;
 
@@ -124,7 +125,13 @@ fn main() {
         let _ = prim_mst_edges(&g, "weight", false);
     }
 
-    println!("Avg: {:?}", start.elapsed() / 100000);
+    println!("Prims w/ Cloning -> Avg: {:?}", start.elapsed() / 100000);
+
+    for _ in 0..100000 {
+        let _ = prim_mst_edges_ref(&g, "weight", false);
+    }
+
+    println!("Prims w/o Cloning -> Avg: {:?}", start.elapsed() / 100000);
 
     
     let source = "A".to_string();
@@ -159,5 +166,4 @@ fn main() {
         let (_, _) = floyd_warshall(&g, "weight").unwrap();
     }
     println!("Avg: {:?}, with 10 times less data", start.elapsed() / 100000);
-
 }

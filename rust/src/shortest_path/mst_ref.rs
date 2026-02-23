@@ -5,73 +5,61 @@ use std::hash::Hash;
 
 use crate::graph::nx_graph::Graph;
 
-struct HeapItem<N>
-where   
-    N: Eq + Hash + Clone
-{
+#[derive(Debug)]
+struct HeapItem<'a, N> {
     w: f64,
     tie: u64,
-    u: N,
-    v: N,
+    u: &'a N,
+    v: &'a N,
 }
 
-impl<N> Eq for HeapItem<N> where N: Eq + Hash + Clone {}
-
-impl<N> PartialEq for HeapItem<N>
-where
-    N: Eq + Hash + Clone,
-{
+// BinaryHeap is a max-heap; we invert ordering to behave like a min-heap.
+impl<'a, N> PartialEq for HeapItem<'a, N> {
     fn eq(&self, other: &Self) -> bool {
-        self.w == other.w && self.tie == other.tie
+        self.w.to_bits() == other.w.to_bits() && self.tie == other.tie
     }
 }
+impl<'a, N> Eq for HeapItem<'a, N> {}
 
-impl<N> Ord for HeapItem<N>
-where
-    N: Eq + Hash + Clone,
-{
-    fn cmp(&self, other: &Self) -> Ordering {
-        // Reverse ordering for min-heap behavior
-        match self.w.partial_cmp(&other.w) {
-            Some(ord) => ord.reverse().then_with(|| self.tie.cmp(&other.tie).reverse()),
-            None => Ordering::Equal,
-        }
-    }
-}
-
-impl<N> PartialOrd for HeapItem<N>
-where
-    N: Eq + Hash + Clone,
-{
+impl<'a, N> PartialOrd for HeapItem<'a, N> {
     fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
         Some(self.cmp(other))
     }
 }
+impl<'a, N> Ord for HeapItem<'a, N> {
+    fn cmp(&self, other: &Self) -> Ordering {
+        // min-heap: smallest weight first
+        other
+            .w
+            .partial_cmp(&self.w)
+            .unwrap()
+            .then_with(|| other.tie.cmp(&self.tie))
+    }
+}
 
-pub fn prim_mst_edges<N>(
-    g: &Graph<N>,
+pub fn prim_mst_edges_ref<'a, N>(
+    g: &'a Graph<N>,
     weight_key: &str,
     ignore_nan: bool,
-) -> Result<Vec<(N,N)>, String>
+) -> Result<Vec<(&'a N, &'a N)>, String>
 where
-    N: Eq + Hash + Clone + Debug
+    N: Eq + Hash + Debug + Clone,
 {
     
-    let mut nodes: HashSet<N> = g.node.keys().cloned().collect();
+    // let mut nodes: HashSet<&'a N> = g.node.keys().collect();
+    let mut unvisited: HashSet<&'a N> = g.node.keys().collect();    
+    let mut visited: HashSet<&'a N> = HashSet::new();
 
-    let mut visited: HashSet<N> = HashSet::new();
-    let mut mst_edges: Vec<(N, N)> = Vec::new();
-
+    let mut mst_edges: Vec<(&'a N, &'a N)> = Vec::new();
     let mut tie: u64 = 0;
 
-    while let Some(start) = nodes.iter().next().cloned() {
-        visited.insert(start.clone());
-        nodes.remove(&start);
+    while let Some(start) = unvisited.iter().next().copied() {
+        visited.insert(start);
+        unvisited.remove(&start);
 
-    
-        let mut heap: BinaryHeap<HeapItem<N>> = BinaryHeap::new();
+        let mut heap: BinaryHeap<HeapItem<'a, N>> = BinaryHeap::new();
 
-        if let Some(nbr) = g.adj_outer.get(&start) {
+        if let Some(nbr) = g.adj_outer.get(start) {
             for (v, attr) in nbr {
                 let w = g.get_weight(attr, weight_key).unwrap_or(1.0);
                 
@@ -82,12 +70,7 @@ where
                     return Err(format!("NaN edge weight found: {:?} -> {:?}", start, v));
                 }
                 tie += 1;
-                heap.push(HeapItem {
-                    w,
-                    tie,
-                    u: start.clone(),
-                    v: v.clone(),
-                });
+                heap.push(HeapItem {w, tie, u: start, v: v,});
             }
         }
 
@@ -95,12 +78,11 @@ where
             if visited.contains(&edge.v) {
                 continue;
             }
+            mst_edges.push((edge.u, edge.v));
+            visited.insert(edge.v);
+            unvisited.remove(&edge.v);
 
-            mst_edges.push((edge.u.clone(), edge.v.clone()));
-            visited.insert(edge.v.clone());
-            nodes.remove(&edge.v);
-
-            if let Some(nbr2) = g.adj_outer.get(&edge.v) {
+            if let Some(nbr2) = g.adj_outer.get(edge.v) {
                 for (dst, attr2) in nbr2 {
                     if visited.contains(dst) {
                         continue;
@@ -116,8 +98,8 @@ where
                     heap.push(HeapItem {
                         w: new_weight,
                         tie,
-                        u: edge.v.clone(),
-                        v: dst.clone(),
+                        u: edge.v,
+                        v: dst,
                     });
                 }
             }
@@ -125,7 +107,4 @@ where
     }
     
     Ok(mst_edges)
-
 }
-
-
