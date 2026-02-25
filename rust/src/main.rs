@@ -11,6 +11,7 @@ use traversal::bfs::bfs_edges;
 use traversal::bfs::bfs_edges_ref;
 use shortest_path::mst::prim_mst_edges;
 use shortest_path::mst_ref::prim_mst_edges_ref;
+use shortest_path::mst_ref::prim_mst_edges_v2;
 use shortest_path::dijkstra::dijkstra_path;
 use shortest_path::floyd::floyd_warshall;
 
@@ -80,40 +81,36 @@ fn main() {
         ],
     );
 
+    let source: &String = match g.node.get_key_value("A") {
+        Some((k, _)) => k,
+        None => {
+            eprintln!("source not found");
+            return;
+        }
+    };
+
     println!("Analysing each algorithm in NX structure with 100,000 iterations");
+
+    // Depth first search
     let start = Instant::now();
     for _ in 0..100000 {
         dfs_edges(&g, Some("A".to_string()), None);
     }
     println!("DFS with Cloning -> Avg: {:?}", start.elapsed() / 100000);
 
-    let source: &String = match g.node.get_key_value("A") {
-        Some((k, _)) => k,
-        None => {
-            eprintln!("source not found");
-            return;
-        }
-    };
-
     let start = Instant::now();
     for _ in 0..100000 {
         let _ = dfs_edges_ref(&g, source, None);
     }
     println!("DFS No Cloning -> Avg: {:?}", start.elapsed() / 100000);
+
     
+    // Breath First Search
     let start = Instant::now();
     for _ in 0..100000 {
         let _ = bfs_edges(&g, Some("A".to_string()), None);
     }
     println!("BFS with Cloning -> Avg: {:?}", start.elapsed() / 100000);
-
-    let source: &String = match g.node.get_key_value("A") {
-        Some((k, _)) => k,
-        None => {
-            eprintln!("source not found");
-            return;
-        }
-    };
 
     let start = Instant::now();
     for _ in 0..100000 {
@@ -121,18 +118,24 @@ fn main() {
     }
     println!("BFS No Cloning -> Avg: {:?}", start.elapsed() / 100000);
 
+    // Prims Algorithm
+    let start = Instant::now();
     for _ in 0..100000 {
         let _ = prim_mst_edges(&g, "weight", false);
     }
-
     println!("Prims w/ Cloning -> Avg: {:?}", start.elapsed() / 100000);
 
+    let start = Instant::now();
     for _ in 0..100000 {
         let _ = prim_mst_edges_ref(&g, "weight", false);
     }
-
     println!("Prims w/o Cloning -> Avg: {:?}", start.elapsed() / 100000);
 
+    let start = Instant::now();
+    for _ in 0..100000 {
+        let _ = prim_mst_edges_v2(&g, "weight", false);
+    }
+    println!("Prims w/ Vectors -> Avg: {:?}", start.elapsed() / 100000);
     
     let source = "A".to_string();
     let dst  = "D".to_string();
