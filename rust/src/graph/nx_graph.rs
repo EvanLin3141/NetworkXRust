@@ -27,6 +27,8 @@ where
     pub graph: AttrMap,                                
     pub node: HashMap<N, AttrMap>,
     pub adj_outer: HashMap<N, HashMap<N, AttrMap>>,     // <- Adj_outer = { source: { dest: {Edge} } }
+    pub neighbors: HashMap<N, Vec<N>>,                  // <- Acts somewhat like a cache for traversals
+    
 }
 
 impl<N> Graph<N>
@@ -41,6 +43,7 @@ where
             graph: HashMap::new(),
             node: HashMap::new(),
             adj_outer: HashMap::new(),
+            neighbors: HashMap::new(),
         };
 
         g.graph.extend(graph_attr);
@@ -53,6 +56,7 @@ where
     {
         if !self.node.contains_key(&new_node) {
             self.adj_outer.insert(new_node.clone(), HashMap::new());
+            self.neighbors.entry(new_node.clone()).or_default();
             
             let mut attr_dict = AttrMap::new();
             attr_dict.extend(attr);
@@ -85,12 +89,22 @@ where
             let nbr_dict = nbrs.entry(src.clone()).or_default();
             nbr_dict.extend(attr)
         }
+
+        let src_list = self.neighbors.entry(src.clone()).or_default();
+        if !src_list.contains(&dst) {
+            src_list.push(dst.clone());
+        }
+
+        let dst_list = self.neighbors.entry(dst.clone()).or_default();
+        if !dst_list.contains(&src) {
+            dst_list.push(src.clone());
+        }
     }
 
     pub fn neighbors(&self, node: &N) -> Result<impl Iterator<Item = &N>, String> {
-        self.adj_outer
+        self.neighbors
             .get(node)
-            .map(|m| m.keys())
+            .map(|m| m.iter())
             .ok_or_else(|| "Node is not in the graph.".to_string())
     }
 
