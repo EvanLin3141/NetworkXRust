@@ -1,0 +1,23 @@
+__pycache__/
+*.py[cod]
+*$py.class
+
+
+# Added by cargo
+
+**/target/
+# Cargo lockfile (ignore only for libraries, keep for binaries)
+# Cargo.lock
+
+# Rustfmt backup files
+*.rs.bk
+
+# IDE/editor folders
+.vscode/
+.idea/
+
+# macOS junk
+.DS_Store
+
+# Windows junk
+Thumbs.db
