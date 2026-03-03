@@ -1,19 +1,7 @@
 use std::collections::{HashMap, HashSet};
 use std::hash::Hash;
 
-
-#[allow(dead_code)]
-#[derive(Debug, Clone)]
-pub enum AttrValue {
-    Int(i64),
-    Float(f64),
-    Text(String),
-    Bool(bool),
-}
-
-// Simple attribute map like your Python `dict`
-pub type AttrMap = HashMap<String, AttrValue>;
-
+use crate::utils::{AttrMap, AttrValue};
 // A direct, beginner-friendly Graph that mirrors your Python layout:
 // - graph: graph-level attributes
 // - node: node -> attributes
