@@ -1,19 +1,24 @@
 mod graph;
 mod traversal;
 mod shortest_path;
+mod utils;
 
 use std::time::Instant;
 use crate::graph::nx_graph::{AttrValue, Graph};
 
 use traversal::dfs::dfs_edges;
 use traversal::dfs::dfs_edges_ref;
+use traversal::dfs_v2::dfs_edges_v2;
 use traversal::bfs::bfs_edges;
 use traversal::bfs::bfs_edges_ref;
+use traversal::bfs_v2::bfs_edges_v2;
 use shortest_path::mst::prim_mst_edges;
 use shortest_path::mst_ref::prim_mst_edges_ref;
 use shortest_path::mst_ref::prim_mst_edges_v2;
 use shortest_path::dijkstra::dijkstra_path;
 use shortest_path::floyd::floyd_warshall;
+
+use utils::print_all::print_all;
 
 
 fn main() {
@@ -91,7 +96,7 @@ fn main() {
 
     println!("Analysing each algorithm in NX structure with 100,000 iterations");
 
-    // Depth first search
+    // <-- Depth first search --> //
     let start = Instant::now();
     for _ in 0..100000 {
         dfs_edges(&g, Some("A".to_string()), None);
@@ -104,8 +109,14 @@ fn main() {
     }
     println!("DFS No Cloning -> Avg: {:?}", start.elapsed() / 100000);
 
-    
-    // Breath First Search
+    let start = Instant::now();
+    for _ in 0..100000 {
+        let _ = dfs_edges_v2(&g, source, None);
+    }
+    println!("DFS vectors -> Avg: {:?}", start.elapsed() / 100000);
+    // <--- END OF DFS --->
+
+    // <-- Breath First Search --> //
     let start = Instant::now();
     for _ in 0..100000 {
         let _ = bfs_edges(&g, Some("A".to_string()), None);
@@ -117,6 +128,12 @@ fn main() {
         let _ = bfs_edges_ref(&g, source, None);
     }
     println!("BFS No Cloning -> Avg: {:?}", start.elapsed() / 100000);
+
+    let start = Instant::now();
+    for _ in 0..100000 {
+        let _ = bfs_edges_v2(&g, source, None);
+    }
+    println!("BFS Vector -> Avg: {:?}", start.elapsed() / 100000);
 
     // Prims Algorithm
     let start = Instant::now();
@@ -169,4 +186,6 @@ fn main() {
         let (_, _) = floyd_warshall(&g, "weight").unwrap();
     }
     println!("Avg: {:?}, with 10 times less data", start.elapsed() / 100000);
+
+    print_all(&g, &source);
 }
