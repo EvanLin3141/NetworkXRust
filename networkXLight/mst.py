@@ -9,6 +9,7 @@ def prim_mst_edges(G, weight="weight", keys=True, data=True, ignore_nan=False):
     #is_multigraph = G.is_multigraph()          #todo#
     nodes = set(G)
     c = count()
+    visited = set()
     
     #sign = 1 if minimum else -1 #WILL NOT DO! Just focus on minimum spanning trees
     
