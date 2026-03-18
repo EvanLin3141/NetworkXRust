@@ -27,6 +27,7 @@ where
     pub predecessors_cache: HashMap<N, Vec<N>>,
 }
 
+#[allow(unused)]
 impl<N> DiGraph<N>
 where
     N: Eq + Hash + Clone,

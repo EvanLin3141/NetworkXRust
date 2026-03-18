@@ -3,11 +3,13 @@ mod traversal;
 mod shortest_path;
 mod utils;
 mod graph_loader;
+mod digraph_loader;
 
 use std::path::PathBuf;
 use std::time::Instant;
 
 use graph_loader::load_graph_from_file;
+use crate::digraph_loader::load_digraph_from_file;
 
 use crate::utils::AttrValue;
 use crate::graph::nx_graph::Graph;
@@ -27,16 +29,19 @@ use traversal::bfs_v2::bfs_edges_digraph;
 // use shortest_path::mst_ref::prim_mst_edges_ref;
 use shortest_path::mst_ref::prim_mst_edges_v2;
 use shortest_path::dijkstra::dijkstra_path;
-use shortest_path::floyd::floyd_warshall;
+use shortest_path::dijkstra::dijkstra_path_digraph;
+// use shortest_path::floyd::floyd_warshall;
+use shortest_path::floyd::floyd_warshall_v3;
+use shortest_path::floyd::floyd_warshall_digraph;
 
 use utils::print_all::print_all;
-
+#[allow(unused)]
 fn graph_path(filename: &str) -> PathBuf {
     PathBuf::from(env!("CARGO_MANIFEST_DIR"))
         .join("graphs")
         .join(filename)
 }
-
+#[allow(unused)]
 fn run_all_algorithms(graph_name: &str, g: &crate::graph::nx_graph::Graph<String>) {
     println!("\n==============================");
     println!("Running algorithms on {graph_name}");
@@ -71,10 +76,46 @@ fn run_all_algorithms(graph_name: &str, g: &crate::graph::nx_graph::Graph<String
     println!("Dijkstra -> {:?}", start.elapsed());
 
     let start = Instant::now();
-    let _ = floyd_warshall(g, "weight").unwrap();
+    let _ = floyd_warshall_v3(g, "weight").unwrap();
     println!("Floyd-Warshall -> {:?}", start.elapsed());
 }
+#[allow(unused)]
+fn run_all_algorithms_directed(
+    graph_name: &str,
+    g: &crate::graph::nx_digraph::DiGraph<String>,
+) {
+    println!("\n==============================");
+    println!("Running directed algorithms on {graph_name}");
+    println!("==============================");
 
+    let source = "0".to_string();
+    let dst = "500".to_string();
+
+    let start = Instant::now();
+    let _ = dfs_edges_digraph(g, &source, None);
+    println!("DFS vectors -> {:?}", start.elapsed());
+
+    let start = Instant::now();
+    let _ = bfs_edges_digraph(g, &source, None);
+    println!("BFS Vector -> {:?}", start.elapsed());
+
+    let start = Instant::now();
+    match dijkstra_path_digraph(g, &source, &dst) {
+        Ok(Some((cost, path))) => {
+            println!("Shortest cost: {}", cost);
+
+            let preview: Vec<_> = path.iter().take(20).collect();
+            println!("Path (first 20): {:?}", preview);
+        }
+        Ok(None) => println!("No path found."),
+        Err(e) => println!("Error: {}", e),
+    }
+    println!("Dijkstra -> {:?}", start.elapsed());
+
+    let start = Instant::now();
+    let _ = floyd_warshall_digraph(g, "weight").unwrap();
+    println!("Floyd-Warshall -> {:?}", start.elapsed());
+}
 fn main() {
     println!("Graph Loading");
 
@@ -89,132 +130,86 @@ fn main() {
 
     println!("Graphs loaded.");
 
+    println!("Directed Graph Loading");
+
     run_all_algorithms("Sparse Graph", &sparse);
     run_all_algorithms("Medium Graph", &medium);
     run_all_algorithms("Dense Graph", &dense);
 
-    let mut h = DiGraph::<String>::new([(
-        "digraph".to_string(),
-        AttrValue::Text("SampleABCGraph".to_string()),
-    )]);
+    let d_sparse = load_digraph_from_file(&graph_path("directed_sparse_graph.txt"))
+        .expect("failed to load sparse graph");
 
-    h.add_node(
-        "A".to_string(),
-        [("type".to_string(), AttrValue::Text("start".to_string()))],
-    );
+    let d_medium = load_digraph_from_file(&graph_path("directed_medium_graph.txt"))
+        .expect("failed to load medium graph");
 
-    h.add_node(
-        "B".to_string(),
-        [("level".to_string(), AttrValue::Int(1))],
-    );
+    let d_dense = load_digraph_from_file(&graph_path("directed_dense_graph.txt"))
+        .expect("failed to load dense graph");
 
-    h.add_node(
-        "C".to_string(),
-        [("level".to_string(), AttrValue::Int(2))],
-    );
+    println!("Graphs loaded.");
 
-    h.add_node(
-        "D".to_string(),
-        [("active".to_string(), AttrValue::Bool(true))],
-    );
+    run_all_algorithms_directed("Directed Sparse Graph", &d_sparse);
+    run_all_algorithms_directed("Directed Medium Graph", &d_medium);
+    run_all_algorithms_directed("Directed Dense Graph", &d_dense);
+}
 
-    h.add_node(
-        "E".to_string(),
-        [("priority".to_string(), AttrValue::Float(1.5))],
-    );
+#[test]
+fn test_floyd_warshall_v3_sample() {
+    let mut g = Graph::<&str>::new(vec![]);
 
-    h.add_node(
-        "F".to_string(),
-        [("end".to_string(), AttrValue::Bool(true))],
-    );
+    g.add_node("A", vec![]);
+    g.add_node("B", vec![]);
+    g.add_node("C", vec![]);
+    g.add_node("D", vec![]);
 
-    h.add_edge(
-        "A".to_string(),
-        "B".to_string(),
-        [
-            ("weight".to_string(), AttrValue::Int(4)),
-            ("relation".to_string(), AttrValue::Text("path1".to_string())),
-        ],
-    );
+    g.add_edge("A", "B", [("weight".to_string(), AttrValue::Int(3))]);
+    g.add_edge("A", "C", [("weight".to_string(), AttrValue::Int(10))]);
+    g.add_edge("B", "C", [("weight".to_string(), AttrValue::Int(1))]);
+    g.add_edge("B", "D", [("weight".to_string(), AttrValue::Int(2))]);
+    g.add_edge("C", "D", [("weight".to_string(), AttrValue::Int(4))]);
 
-    h.add_edge(
-        "A".to_string(),
-        "C".to_string(),
-        [
-            ("weight".to_string(), AttrValue::Int(2)),
-            ("relation".to_string(), AttrValue::Text("shortcut".to_string())),
-        ],
-    );
+    let (pred, dist, nodes) = floyd_warshall_v3(&g, "weight").unwrap();
 
-    h.add_edge(
-        "B".to_string(),
-        "D".to_string(),
-        [
-            ("weight".to_string(), AttrValue::Int(7)),
-            ("enabled".to_string(), AttrValue::Bool(true)),
-        ],
-    );
+    println!("nodes = {:?}", nodes);
+    println!("dist = {:?}", dist);
+    println!("pred = {:?}", pred);
 
-    h.add_edge(
-        "C".to_string(),
-        "D".to_string(),
-        [
-            ("weight".to_string(), AttrValue::Int(3)),
-            ("enabled".to_string(), AttrValue::Bool(true)),
-        ],
-    );
+    // Since HashMap order is not stable, map node names to indices first
+    let mut idx = std::collections::HashMap::new();
+    for (i, node) in nodes.iter().enumerate() {
+        idx.insert(**node, i);
+    }
 
-    h.add_edge(
-        "D".to_string(),
-        "E".to_string(),
-        [
-            ("weight".to_string(), AttrValue::Int(6)),
-            ("cost".to_string(), AttrValue::Float(2.3)),
-        ],
-    );
+    let a = idx["A"];
+    let b = idx["B"];
+    let c = idx["C"];
+    let d = idx["D"];
 
-    h.add_edge(
-        "E".to_string(),
-        "F".to_string(),
-        [
-            ("weight".to_string(), AttrValue::Int(1)),
-            ("relation".to_string(), AttrValue::Text("final".to_string())),
-        ],
-    );
+    // Expected shortest distances
+    assert_eq!(dist[a][a], 0.0);
+    assert_eq!(dist[a][b], 3.0);
+    assert_eq!(dist[a][c], 4.0); // A -> B -> C
+    assert_eq!(dist[a][d], 5.0); // A -> B -> D
 
-    h.add_edge(
-        "C".to_string(),
-        "F".to_string(),
-        [
-            ("weight".to_string(), AttrValue::Int(9)),
-            ("relation".to_string(), AttrValue::Text("long_route".to_string())),
-        ],
-    );
+    assert_eq!(dist[b][a], 3.0);
+    assert_eq!(dist[b][b], 0.0);
+    assert_eq!(dist[b][c], 1.0);
+    assert_eq!(dist[b][d], 2.0);
 
-    h.add_edge(
-        "F".to_string(),
-        "C".to_string(),
-        [
-            ("weight".to_string(), AttrValue::Int(5)),
-            ("relation".to_string(), AttrValue::Text("feedback".to_string())),
-        ],
-    );
+    assert_eq!(dist[c][a], 4.0); // C -> B -> A
+    assert_eq!(dist[c][b], 1.0);
+    assert_eq!(dist[c][c], 0.0);
+    assert_eq!(dist[c][d], 3.0); // C -> B -> D
 
-    println!("Starting Digraph testing");
+    assert_eq!(dist[d][a], 5.0); // D -> B -> A
+    assert_eq!(dist[d][b], 2.0);
+    assert_eq!(dist[d][c], 3.0); // D -> B -> C
+    assert_eq!(dist[d][d], 0.0);
 
-    let source: &String = match h.node.get_key_value("A") {
-        Some((k, _)) => k,
-        None => {
-            eprintln!("source not found");
-            return;
-        }
-    };
+    // Optional predecessor checks
+    assert_eq!(pred[a][b], Some(a));
+    assert_eq!(pred[a][c], Some(b));
+    assert_eq!(pred[a][d], Some(b));
 
-    let start = Instant::now();
-    let _ = dfs_edges_digraph(&h, source, None);
-    println!("Digraph DFS -> {:?}", start.elapsed());
-
-    let start = Instant::now();
-    let _ = bfs_edges_digraph(&h, source, None);
-    println!("Digraph BFS -> {:?}", start.elapsed());
+    assert_eq!(pred[c][a], Some(b));
+    assert_eq!(pred[c][d], Some(b));
 }
