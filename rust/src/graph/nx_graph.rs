@@ -2,29 +2,24 @@ use std::collections::{HashMap, HashSet};
 use std::hash::Hash;
 
 use crate::utils::{AttrMap, AttrValue};
-// A direct, beginner-friendly Graph that mirrors your Python layout:
-// - graph: graph-level attributes
-// - node: node -> attributes
-// - adj_outer: from_node -> (to_node -> edge attributes)
 
 #[derive(Debug, Clone)]
 pub struct Graph<N>
-where 
-    N: Eq + Hash + Clone
+where
+    N: Eq + Hash + Clone,
 {
-    pub graph: AttrMap,                                
+    pub graph: AttrMap,
     pub node: HashMap<N, AttrMap>,
-    pub adj_outer: HashMap<N, HashMap<N, AttrMap>>,     // <- Adj_outer = { source: { dest: {Edge} } }
-    pub neighbors: HashMap<N, Vec<N>>,                  // <- Acts somewhat like a cache for traversals
-    
+    pub adj_outer: HashMap<N, HashMap<N, AttrMap>>,
+    pub neighbors: HashMap<N, HashSet<N>>, // cache for traversals
 }
 
 impl<N> Graph<N>
 where
-    N: Eq + Hash + Clone
+    N: Eq + Hash + Clone,
 {
-    pub fn new<I>(graph_attr: I) -> Self 
-    where 
+    pub fn new<I>(graph_attr: I) -> Self
+    where
         I: IntoIterator<Item = (String, AttrValue)>,
     {
         let mut g = Graph {
@@ -45,16 +40,14 @@ where
         if !self.node.contains_key(&new_node) {
             self.adj_outer.insert(new_node.clone(), HashMap::new());
             self.neighbors.entry(new_node.clone()).or_default();
-            
+
             let mut attr_dict = AttrMap::new();
             attr_dict.extend(attr);
             self.node.insert(new_node, attr_dict);
-        } else {
-            if let Some(existing) = self.node.get_mut(&new_node) {
-                existing.extend(attr);
-            }
+        } else if let Some(existing) = self.node.get_mut(&new_node) {
+            existing.extend(attr);
         }
-    } 
+    }
 
     pub fn add_edge<I>(&mut self, src: N, dst: N, attr: I)
     where
@@ -65,34 +58,34 @@ where
 
         self.adj_outer.entry(src.clone()).or_default();
         self.adj_outer.entry(dst.clone()).or_default();
-        
+
         {
             let nbrs = self.adj_outer.get_mut(&src).unwrap();
             let nbr_dict = nbrs.entry(dst.clone()).or_default();
-            nbr_dict.extend(attr.clone())
+            nbr_dict.extend(attr.clone());
         }
 
         {
             let nbrs = self.adj_outer.get_mut(&dst).unwrap();
             let nbr_dict = nbrs.entry(src.clone()).or_default();
-            nbr_dict.extend(attr)
+            nbr_dict.extend(attr);
         }
 
-        let src_list = self.neighbors.entry(src.clone()).or_default();
-        if !src_list.contains(&dst) {
-            src_list.push(dst.clone());
-        }
+        self.neighbors
+            .entry(src.clone())
+            .or_default()
+            .insert(dst.clone());
 
-        let dst_list = self.neighbors.entry(dst.clone()).or_default();
-        if !dst_list.contains(&src) {
-            dst_list.push(src.clone());
-        }
+        self.neighbors
+            .entry(dst.clone())
+            .or_default()
+            .insert(src.clone());
     }
 
     pub fn neighbors(&self, node: &N) -> Result<impl Iterator<Item = &N>, String> {
         self.neighbors
             .get(node)
-            .map(|m| m.iter())
+            .map(|s| s.iter())
             .ok_or_else(|| "Node is not in the graph.".to_string())
     }
 
@@ -100,19 +93,22 @@ where
         match attr.get(weight_key) {
             Some(AttrValue::Float(w)) => Some(*w),
             Some(AttrValue::Int(w)) => Some(*w as f64),
-            _ => None, // missing or wrong type
+            _ => None,
         }
     }
 
     pub fn edges(&self, data: bool) -> Vec<(N, N, Option<AttrMap>)> {
         let mut result = Vec::new();
-        let mut seen: HashSet<(N,N)> = HashSet::new();
+        let mut seen: HashSet<(N, N)> = HashSet::new();
+
         for (u, nbrs) in &self.adj_outer {
             for (v, attr) in nbrs {
                 if seen.contains(&(v.clone(), u.clone())) {
                     continue;
                 }
+
                 seen.insert((u.clone(), v.clone()));
+
                 if data {
                     result.push((u.clone(), v.clone(), Some(attr.clone())));
                 } else {
@@ -120,8 +116,7 @@ where
                 }
             }
         }
+
         result
     }
 }
-
-

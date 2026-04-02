@@ -1,3 +1,4 @@
+#[warn(unused_imports)]
 mod graph;
 mod traversal;
 mod shortest_path;
