@@ -3,7 +3,7 @@ use std::hash::Hash;
 
 use crate::graph::nx_graph::Graph;
 use crate::graph::nx_digraph::DiGraph;
-pub fn floyd_warshall<N>(
+pub fn floyd_warshall_nx<N>(
     g: &Graph<N>, 
     weight_key: &str,
 ) -> Result<(HashMap<N, HashMap<N, N>>, HashMap<N, HashMap<N, f64>>), String>
@@ -144,6 +144,67 @@ where
     Ok((pred, dist))
 }
 
+pub fn floyd_warshall<'a, N>(
+    g: &'a Graph<N>,
+    weight_key: &str,
+) -> Result<(Vec<Vec<Option<usize>>>, Vec<Vec<f64>>, Vec<&'a N>), String>
+where
+    N: Eq + Hash + Clone,
+{
+    let nodes: Vec<&'a N> = g.node.keys().collect();
+    let n = nodes.len();
+
+    let mut index: HashMap<&'a N, usize> = HashMap::with_capacity(n);
+    for (i, node) in nodes.iter().enumerate() {
+        index.insert(*node, i);
+    }
+
+    let mut dist: Vec<Vec<f64>> = vec![vec![f64::INFINITY; n]; n];
+    let mut pred: Vec<Vec<Option<usize>>> = vec![vec![None; n]; n];
+
+    for i in 0..n {
+        dist[i][i] = 0.0;
+    }
+
+    for (u, neighbors) in &g.adj_outer {
+        let i = index[u];
+
+        for (v, attr) in neighbors {
+            let j = index[v];
+            let w: f64 = g.get_weight(attr, weight_key).unwrap_or(1.0);
+
+            if w < dist[i][j] {
+                dist[i][j] = w;
+                pred[i][j] = Some(i);
+            }
+        }
+    }
+
+    for k in 0..n {
+        for i in 0..n {
+            let dik = dist[i][k];
+            if dik.is_infinite() {
+                continue;
+            }
+
+            for j in 0..n {
+                let dkj = dist[k][j];
+                if dkj.is_infinite() {
+                    continue;
+                }
+
+                let alt = dik + dkj;
+                if alt < dist[i][j] {
+                    dist[i][j] = alt;
+                    pred[i][j] = pred[k][j];
+                }
+            }
+        }
+    }
+
+    Ok((pred, dist, nodes))
+}
+
 pub fn floyd_warshall_digraph<'a, N>(
     g: &'a DiGraph<N>,
     weight_key: &str,
@@ -205,63 +266,3 @@ where
     Ok((pred, dist, nodes))
 }
 
-pub fn floyd_warshall_v3<'a, N>(
-    g: &'a Graph<N>,
-    weight_key: &str,
-) -> Result<(Vec<Vec<Option<usize>>>, Vec<Vec<f64>>, Vec<&'a N>), String>
-where
-    N: Eq + Hash + Clone,
-{
-    let nodes: Vec<&'a N> = g.node.keys().collect();
-    let n = nodes.len();
-
-    let mut index: HashMap<&'a N, usize> = HashMap::with_capacity(n);
-    for (i, node) in nodes.iter().enumerate() {
-        index.insert(*node, i);
-    }
-
-    let mut dist: Vec<Vec<f64>> = vec![vec![f64::INFINITY; n]; n];
-    let mut pred: Vec<Vec<Option<usize>>> = vec![vec![None; n]; n];
-
-    for i in 0..n {
-        dist[i][i] = 0.0;
-    }
-
-    for (u, neighbors) in &g.adj_outer {
-        let i = index[u];
-
-        for (v, attr) in neighbors {
-            let j = index[v];
-            let w: f64 = g.get_weight(attr, weight_key).unwrap_or(1.0);
-
-            if w < dist[i][j] {
-                dist[i][j] = w;
-                pred[i][j] = Some(i);
-            }
-        }
-    }
-
-    for k in 0..n {
-        for i in 0..n {
-            let dik = dist[i][k];
-            if dik.is_infinite() {
-                continue;
-            }
-
-            for j in 0..n {
-                let dkj = dist[k][j];
-                if dkj.is_infinite() {
-                    continue;
-                }
-
-                let alt = dik + dkj;
-                if alt < dist[i][j] {
-                    dist[i][j] = alt;
-                    pred[i][j] = pred[k][j];
-                }
-            }
-        }
-    }
-
-    Ok((pred, dist, nodes))
-}

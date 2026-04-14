@@ -11,15 +11,18 @@ where
     pub graph: AttrMap,
     pub node: HashMap<N, AttrMap>,
 
-    // outgoing adjacency: src -> (dst -> edge attrs)
     pub adj_outer: HashMap<N, HashMap<N, AttrMap>>,
-
-    // incoming adjacency: dst -> (src -> edge attrs)
     pub pred: HashMap<N, HashMap<N, AttrMap>>,
 
-    // traversal caches, matching Graph style
-    pub neighbors: HashMap<N, HashSet<N>>,      // out-neighbors
-    pub predecessors: HashMap<N, HashSet<N>>,   // in-neighbors
+    // traversal caches
+    pub neighbors: HashMap<N, HashSet<N>>,    // out-neighbors
+    pub predecessors: HashMap<N, HashSet<N>>, // in-neighbors
+
+    // BFS / DFS traversal speed ups
+    pub node_to_idx: HashMap<N, usize>,
+    pub idx_to_node: Vec<N>,
+    pub adj_idx: Vec<Vec<usize>>,  // outgoing adjacency
+    pub pred_idx: Vec<Vec<usize>>, // incoming adjacency
 }
 
 impl<N> DiGraph<N>
@@ -37,16 +40,36 @@ where
             pred: HashMap::new(),
             neighbors: HashMap::new(),
             predecessors: HashMap::new(),
+
+            node_to_idx: HashMap::new(),
+            idx_to_node: Vec::new(),
+            adj_idx: Vec::new(),
+            pred_idx: Vec::new(),
         };
 
         g.graph.extend(graph_attr);
         g
     }
 
+    pub fn ensure_node_index(&mut self, node: &N) -> usize {
+        if let Some(&idx) = self.node_to_idx.get(node) {
+            return idx;
+        }
+
+        let idx = self.idx_to_node.len();
+        self.node_to_idx.insert(node.clone(), idx);
+        self.idx_to_node.push(node.clone());
+        self.adj_idx.push(Vec::new());
+        self.pred_idx.push(Vec::new());
+        idx
+    }
+
     pub fn add_node<I>(&mut self, new_node: N, attr: I)
     where
         I: IntoIterator<Item = (String, AttrValue)>,
     {
+        self.ensure_node_index(&new_node);
+
         if !self.node.contains_key(&new_node) {
             self.adj_outer.insert(new_node.clone(), HashMap::new());
             self.pred.insert(new_node.clone(), HashMap::new());
@@ -65,6 +88,9 @@ where
     where
         I: IntoIterator<Item = (String, AttrValue)> + Clone,
     {
+        let src_idx = self.ensure_node_index(&src);
+        let dst_idx = self.ensure_node_index(&dst);
+
         self.node.entry(src.clone()).or_default();
         self.node.entry(dst.clone()).or_default();
 
@@ -95,6 +121,15 @@ where
             .entry(dst.clone())
             .or_default()
             .insert(src.clone());
+
+        // keep indexed adjacency in sync
+        if !self.adj_idx[src_idx].contains(&dst_idx) {
+            self.adj_idx[src_idx].push(dst_idx);
+        }
+
+        if !self.pred_idx[dst_idx].contains(&src_idx) {
+            self.pred_idx[dst_idx].push(src_idx);
+        }
     }
 
     pub fn neighbors(&self, node: &N) -> Result<impl Iterator<Item = &N>, String> {
@@ -133,5 +168,18 @@ where
         }
 
         result
+    }
+
+    // BFS / DFS helper functions
+    pub fn get_index(&self, node: &N) -> Option<usize> {
+        self.node_to_idx.get(node).copied()
+    }
+
+    pub fn get_node_by_index(&self, idx: usize) -> Option<&N> {
+        self.idx_to_node.get(idx)
+    }
+
+    pub fn node_count(&self) -> usize {
+        self.idx_to_node.len()
     }
 }

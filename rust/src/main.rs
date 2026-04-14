@@ -1,4 +1,4 @@
-#[warn(unused_imports)]
+#![allow(dead_code, unused_imports)]
 mod graph;
 mod traversal;
 mod shortest_path;
@@ -16,26 +16,20 @@ use crate::utils::AttrValue;
 use crate::graph::nx_graph::Graph;
 use crate::graph::nx_digraph::DiGraph;
 
-// use traversal::dfs::dfs_edges;
-// use traversal::dfs::dfs_edges_ref;
-use traversal::dfs_v2::dfs_edges_v2;
-use traversal::dfs_v2::dfs_edges_digraph;
+use traversal::dfs::dfs_edges;
+use traversal::dfs::dfs_edges_digraph;
 
-// use traversal::bfs::bfs_edges;
-// use traversal::bfs::bfs_edges_ref;
-use traversal::bfs_v2::bfs_edges_v2;
-use traversal::bfs_v2::bfs_edges_digraph;
+use traversal::bfs::bfs_edges;
+use traversal::bfs::bfs_edges_digraph;
 
-// use shortest_path::mst::prim_mst_edges;
-// use shortest_path::mst_ref::prim_mst_edges_ref;
-use shortest_path::mst_ref::prim_mst_edges_v2;
+use shortest_path::mst::prim_mst_edges;
+
 use shortest_path::dijkstra::dijkstra_path;
 use shortest_path::dijkstra::dijkstra_path_digraph;
-// use shortest_path::floyd::floyd_warshall;
-use shortest_path::floyd::floyd_warshall_v3;
+
+use shortest_path::floyd::floyd_warshall;
 use shortest_path::floyd::floyd_warshall_digraph;
 
-use utils::print_all::print_all;
 #[allow(unused)]
 fn graph_path(filename: &str) -> PathBuf {
     PathBuf::from(env!("CARGO_MANIFEST_DIR"))
@@ -52,15 +46,15 @@ fn run_all_algorithms(graph_name: &str, g: &crate::graph::nx_graph::Graph<String
     let dst = "500".to_string();
 
     let start = Instant::now();
-    let _ = dfs_edges_v2(g, &source, None);
+    let _ = dfs_edges(g, &source, None);
     println!("DFS vectors -> {:?}", start.elapsed());
 
     let start = Instant::now();
-    let _ = bfs_edges_v2(g, &source, None);
+    let _ = bfs_edges(g, &source, None);
     println!("BFS Vector -> {:?}", start.elapsed());
 
     let start = Instant::now();
-    let _ = prim_mst_edges_v2(g, "weight", false);
+    let _ = prim_mst_edges(g, "weight", false);
     println!("Prims w/ Vectors -> {:?}", start.elapsed());
 
     let start = Instant::now();
@@ -77,7 +71,7 @@ fn run_all_algorithms(graph_name: &str, g: &crate::graph::nx_graph::Graph<String
     println!("Dijkstra -> {:?}", start.elapsed());
 
     let start = Instant::now();
-    let _ = floyd_warshall_v3(g, "weight").unwrap();
+    let _ = floyd_warshall(g, "weight").unwrap();
     println!("Floyd-Warshall -> {:?}", start.elapsed());
 }
 #[allow(unused)]

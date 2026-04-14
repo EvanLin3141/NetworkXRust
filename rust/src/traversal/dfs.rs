@@ -1,101 +1,131 @@
-use std::collections::HashSet;
+#[warn(unused_imports)]
 use std::hash::Hash;
 
 use crate::graph::nx_graph::Graph;
+use crate::graph::nx_digraph::DiGraph;
 
-pub fn dfs_edges<N>(
-    g: &Graph<N>,
-    source: Option<N>,
-    depth_limit: Option<usize>,
-) -> Vec<(N, N)>
-where
-    N: Eq + Hash + Clone + Ord,
-{
-    let limit = depth_limit.unwrap_or(g.node.len());
-
-    let start: N = match source {
-        Some(s) => s,
-        None => g.node.keys().next().expect("Graph is empty").clone(),
-    };
-
-    let get_children = |n: &N| -> std::vec::IntoIter<N> {
-        let kids: Vec<N> = g.adj_outer
-            .get(n)
-            .map(|m| m.keys().cloned().collect())
-            .unwrap_or_default();
-        // kids.sort(); 
-        kids.into_iter()
-    };
-
-    let mut visited: HashSet<N> = HashSet::new();
-    let mut dfs_path: Vec<(N, N)> = Vec::new();
-
-    visited.insert(start.clone());
-
-    let mut stack: Vec<(N, std::vec::IntoIter<N>, usize)> = Vec::new();
-    stack.push((start.clone(), get_children(&start), 0)); // depth=0
-
-    while let Some((parent, mut children, depth)) = stack.pop() {
-        if let Some(child) = children.next() {
-            stack.push((parent.clone(), children, depth));
-
-            if visited.contains(&child) {
-                continue;
-            }
-
-            dfs_path.push((parent.clone(), child.clone()));
-            visited.insert(child.clone());
-
-            if depth < limit {
-                stack.push((child.clone(), get_children(&child), depth + 1));
-            }
-        }
-    }
-    dfs_path
+struct Frame {
+    parent_idx: usize,
+    child_pos: usize,
+    depth: usize,
 }
 
-pub fn dfs_edges_ref<'a, N>(
+pub fn dfs_edges<'a, N>(
     g: &'a Graph<N>,
     source: &'a N,
     depth_limit: Option<usize>,
 ) -> Result<Vec<(&'a N, &'a N)>, String>
 where
-    N: Eq + Hash + Clone + Ord,
+    N: Eq + Hash + Clone,
 {
-    let limit = depth_limit.unwrap_or(g.node.len());
+    let source_idx = g
+        .get_index(source)
+        .ok_or_else(|| "Source node is not in the graph.".to_string())?;
 
-    let start: &'a N = source;
+    let limit = depth_limit.unwrap_or(g.node_count());
 
-    let get_children = |n: &'a N| -> std::vec::IntoIter<&'a N> {
-        let kids: Vec<&'a N> = g
-            .adj_outer
-            .get(n)
-            .map(|m| m.keys().collect())
-            .unwrap_or_default();
-        // kids.sort();
-        kids.into_iter()
-    };
+    let mut visited = vec![false; g.node_count()];
+    let mut dfs_path: Vec<(&'a N, &'a N)> =
+        Vec::with_capacity(g.node_count().saturating_sub(1));
+    let mut stack: Vec<Frame> = Vec::with_capacity(g.node_count());
 
-    let mut visited: HashSet<&'a N> = HashSet::new();
-    let mut dfs_path: Vec<(&'a N, &'a N)> = Vec::new();
+    visited[source_idx] = true;
 
-    visited.insert(start);
+    stack.push(Frame {
+        parent_idx: source_idx,
+        child_pos: 0,
+        depth: 0,
+    });
 
-    let mut stack: Vec<(&'a N, std::vec::IntoIter<&'a N>, usize)> = Vec::new();
-    stack.push((start, get_children(start), 0));
+    while let Some(frame) = stack.last_mut() {
+        let parent_idx = frame.parent_idx;
 
-    while let Some((parent, mut children, depth)) = stack.pop() {
-        if let Some(child) = children.next() {
-            stack.push((parent, children, depth));
+        if frame.child_pos >= g.adj_idx[parent_idx].len() {
+            stack.pop();
+            continue;
+        }
 
-            if visited.insert(child) {
-                dfs_path.push((parent, child));
+        let child_idx = g.adj_idx[parent_idx][frame.child_pos];
+        frame.child_pos += 1;
 
-                if depth + 1 < limit {
-                    stack.push((child, get_children(child), depth + 1));
-                }
+        let next_depth = frame.depth + 1;
+
+        if !visited[child_idx] {
+            visited[child_idx] = true;
+
+            let parent = &g.idx_to_node[parent_idx];
+            let child = &g.idx_to_node[child_idx];
+            dfs_path.push((parent, child));
+
+            if next_depth < limit {
+                stack.push(Frame {
+                    parent_idx: child_idx,
+                    child_pos: 0,
+                    depth: next_depth,
+                });
             }
         }
     }
+
+    Ok(dfs_path)
+}
+
+pub fn dfs_edges_digraph<'a, N>(
+    g: &'a DiGraph<N>,
+    source: &'a N,
+    depth_limit: Option<usize>,
+) -> Result<Vec<(&'a N, &'a N)>, String>
+where
+    N: Eq + Hash + Clone,
+{
+    let source_idx = g
+        .get_index(source)
+        .ok_or_else(|| "Source node is not in the graph.".to_string())?;
+
+    let limit = depth_limit.unwrap_or(g.node_count());
+
+    let mut visited = vec![false; g.node_count()];
+    let mut dfs_path: Vec<(&'a N, &'a N)> =
+        Vec::with_capacity(g.node_count().saturating_sub(1));
+    let mut stack: Vec<Frame> = Vec::with_capacity(g.node_count());
+
+    visited[source_idx] = true;
+
+    stack.push(Frame {
+        parent_idx: source_idx,
+        child_pos: 0,
+        depth: 0,
+    });
+
+    while let Some(frame) = stack.last_mut() {
+        let parent_idx = frame.parent_idx;
+
+        if frame.child_pos >= g.adj_idx[parent_idx].len() {
+            stack.pop();
+            continue;
+        }
+
+        let child_idx = g.adj_idx[parent_idx][frame.child_pos];
+        frame.child_pos += 1;
+
+        let next_depth = frame.depth + 1;
+
+        if !visited[child_idx] {
+            visited[child_idx] = true;
+
+            let parent = &g.idx_to_node[parent_idx];
+            let child = &g.idx_to_node[child_idx];
+            dfs_path.push((parent, child));
+
+            if next_depth < limit {
+                stack.push(Frame {
+                    parent_idx: child_idx,
+                    child_pos: 0,
+                    depth: next_depth,
+                });
+            }
+        }
+    }
+
     Ok(dfs_path)
 }

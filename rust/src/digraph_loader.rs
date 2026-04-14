@@ -2,7 +2,6 @@ use std::fs::File;
 use std::io::{BufRead, BufReader};
 use std::path::Path;
 
-use crate::graph::nx_graph::Graph;
 use crate::utils::AttrValue;
 
 use crate::graph::nx_digraph::DiGraph;

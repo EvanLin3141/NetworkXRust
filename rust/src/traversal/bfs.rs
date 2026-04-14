@@ -1,47 +1,10 @@
-use std::collections::{HashSet, VecDeque};
+use std::collections::VecDeque;
 use std::hash::Hash;
 
 use crate::graph::nx_graph::Graph;
+use crate::graph::nx_digraph::DiGraph;
 
-pub fn bfs_edges<N> (
-    g: &Graph<N>,
-    source: Option<N>,
-    depth_limit: Option<usize>,
-) -> Result<Vec<(N, N)>, String>
-where
-    N: Eq + Hash + Clone
-{
-    let source = match source {
-        Some(s) => s,
-        None => return Err("bfs_edges error: source is None".to_string()),
-    };
-
-    let limit = depth_limit.unwrap_or(g.node.len());
-
-    let mut bfs_path: Vec<(N, N)> = Vec::new();
-    let mut seen: HashSet<N> = HashSet::new();
-    let mut queue: VecDeque<(N, usize)> = VecDeque::new();
-
-    seen.insert(source.clone());
-    queue.push_back((source,0));
-
-    while let Some((parent, depth)) = queue.pop_front() {
-        if depth >= limit {
-            continue;
-        };
-
-        let neighbors = g.neighbors(&parent)?;
-        for child in neighbors {
-            if seen.insert(child.clone()) {
-                bfs_path.push((parent.clone(), child.clone()));
-                queue.push_back((child.clone(), depth + 1));
-            }
-        }
-    }
-    Ok(bfs_path)
-}
-
-pub fn bfs_edges_ref<'a, N>(
+pub fn bfs_edges<'a, N>(
     g: &'a Graph<N>,
     source: &'a N,
     depth_limit: Option<usize>,
@@ -49,29 +12,78 @@ pub fn bfs_edges_ref<'a, N>(
 where
     N: Eq + Hash + Clone,
 {
-    let limit = depth_limit.unwrap_or(g.node.len());
+    let source_idx = g
+        .get_index(source)
+        .ok_or_else(|| "Source node is not in the graph.".to_string())?;
 
-    let mut bfs_path: Vec<(&'a N, &'a N)> = Vec::new();
-    let mut seen: HashSet<&'a N> = HashSet::new();
-    let mut queue: VecDeque<(&'a N, usize)> = VecDeque::new();
+    let limit = depth_limit.unwrap_or(g.node_count());
 
-    seen.insert(source);
-    queue.push_back((source, 0));
+    let mut seen = vec![false; g.node_count()];
+    let mut bfs_path: Vec<(&'a N, &'a N)> =
+        Vec::with_capacity(g.node_count().saturating_sub(1));
+    let mut queue: VecDeque<(usize, usize)> = VecDeque::with_capacity(g.node_count());
 
-    while let Some((parent, depth)) = queue.pop_front() {
+    seen[source_idx] = true;
+    queue.push_back((source_idx, 0));
+
+    while let Some((parent_idx, depth)) = queue.pop_front() {
         if depth >= limit {
             continue;
         }
 
-        let nbrs = g
-            .adj_outer
-            .get(parent)
-            .ok_or_else(|| "bfs_edges_ref error: parent not in graph".to_string())?;
+        for &child_idx in &g.adj_idx[parent_idx] {
+            if !seen[child_idx] {
+                seen[child_idx] = true;
 
-        for child in nbrs.keys() {
-            if seen.insert(child) {
+                let parent = &g.idx_to_node[parent_idx];
+                let child = &g.idx_to_node[child_idx];
+
                 bfs_path.push((parent, child));
-                queue.push_back((child, depth + 1));
+                queue.push_back((child_idx, depth + 1));
+            }
+        }
+    }
+
+    Ok(bfs_path)
+}
+
+
+pub fn bfs_edges_digraph<'a, N>(
+    g: &'a DiGraph<N>,
+    source: &'a N,
+    depth_limit: Option<usize>,
+) -> Result<Vec<(&'a N, &'a N)>, String>
+where
+    N: Eq + Hash + Clone,
+{
+    let source_idx = g
+        .get_index(source)
+        .ok_or_else(|| "Source node is not in the graph.".to_string())?;
+
+    let limit = depth_limit.unwrap_or(g.node_count());
+
+    let mut seen = vec![false; g.node_count()];
+    let mut bfs_path: Vec<(&'a N, &'a N)> =
+        Vec::with_capacity(g.node_count().saturating_sub(1));
+    let mut queue: VecDeque<(usize, usize)> = VecDeque::with_capacity(g.node_count());
+
+    seen[source_idx] = true;
+    queue.push_back((source_idx, 0));
+
+    while let Some((parent_idx, depth)) = queue.pop_front() {
+        if depth >= limit {
+            continue;
+        }
+
+        for &child_idx in &g.adj_idx[parent_idx] {
+            if !seen[child_idx] {
+                seen[child_idx] = true;
+
+                let parent = &g.idx_to_node[parent_idx];
+                let child = &g.idx_to_node[child_idx];
+
+                bfs_path.push((parent, child));
+                queue.push_back((child_idx, depth + 1));
             }
         }
     }

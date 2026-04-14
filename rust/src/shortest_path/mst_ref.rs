@@ -5,62 +5,78 @@ use std::hash::Hash;
 
 use crate::graph::nx_graph::Graph;
 
-#[derive(Debug)]
-struct HeapItem<'a, N> {
+// V2 with several improvements
+// 1. Index Mapping instead of HashMaps
+// 2. Fix &&a'n
+// 3.
+
+struct HeapItem<N>
+where   
+    N: Eq + Hash + Clone
+{
     w: f64,
     tie: u64,
-    u: &'a N,
-    v: &'a N,
+    u: N,
+    v: N,
 }
 
-// BinaryHeap is a max-heap; we invert ordering to behave like a min-heap.
-impl<'a, N> PartialEq for HeapItem<'a, N> {
+impl<N> Eq for HeapItem<N> where N: Eq + Hash + Clone {}
+
+impl<N> PartialEq for HeapItem<N>
+where
+    N: Eq + Hash + Clone,
+{
     fn eq(&self, other: &Self) -> bool {
-        self.w.to_bits() == other.w.to_bits() && self.tie == other.tie
+        self.w == other.w && self.tie == other.tie
     }
 }
-impl<'a, N> Eq for HeapItem<'a, N> {}
 
-impl<'a, N> PartialOrd for HeapItem<'a, N> {
+impl<N> Ord for HeapItem<N>
+where
+    N: Eq + Hash + Clone,
+{
+    fn cmp(&self, other: &Self) -> Ordering {
+        // Reverse ordering for min-heap behavior
+        match self.w.partial_cmp(&other.w) {
+            Some(ord) => ord.reverse().then_with(|| self.tie.cmp(&other.tie).reverse()),
+            None => Ordering::Equal,
+        }
+    }
+}
+
+impl<N> PartialOrd for HeapItem<N>
+where
+    N: Eq + Hash + Clone,
+{
     fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
         Some(self.cmp(other))
     }
 }
-impl<'a, N> Ord for HeapItem<'a, N> {
-    fn cmp(&self, other: &Self) -> Ordering {
-        // min-heap: smallest weight first
-        other
-            .w
-            .partial_cmp(&self.w)
-            .unwrap()
-            .then_with(|| other.tie.cmp(&self.tie))
-    }
-}
 
-
-pub fn prim_mst_edges_ref<'a, N>(
-    g: &'a Graph<N>,
+pub fn prim_mst_edges_nx<N>(
+    g: &Graph<N>,
     weight_key: &str,
     ignore_nan: bool,
-) -> Result<Vec<(&'a N, &'a N)>, String>
+) -> Result<Vec<(N,N)>, String>
 where
-    N: Eq + Hash + Debug + Clone,
+    N: Eq + Hash + Clone + Debug
 {
     
-    // let mut nodes: HashSet<&'a N> = g.node.keys().collect();
-    let mut unvisited: HashSet<&'a N> = g.node.keys().collect();    
-    let mut visited: HashSet<&'a N> = HashSet::new();
+    let mut nodes: HashSet<N> = g.node.keys().cloned().collect();
 
-    let mut mst_edges: Vec<(&'a N, &'a N)> = Vec::new();
+    let mut visited: HashSet<N> = HashSet::new();
+    let mut mst_edges: Vec<(N, N)> = Vec::new();
+
     let mut tie: u64 = 0;
 
-    while let Some(start) = unvisited.iter().next().copied() {
-        visited.insert(start);
-        unvisited.remove(&start);
+    while let Some(start) = nodes.iter().next().cloned() {
+        visited.insert(start.clone());
+        nodes.remove(&start);
 
-        let mut heap: BinaryHeap<HeapItem<'a, N>> = BinaryHeap::new();
+    
+        let mut heap: BinaryHeap<HeapItem<N>> = BinaryHeap::new();
 
-        if let Some(nbr) = g.adj_outer.get(start) {
+        if let Some(nbr) = g.adj_outer.get(&start) {
             for (v, attr) in nbr {
                 let w = g.get_weight(attr, weight_key).unwrap_or(1.0);
                 
@@ -71,7 +87,12 @@ where
                     return Err(format!("NaN edge weight found: {:?} -> {:?}", start, v));
                 }
                 tie += 1;
-                heap.push(HeapItem {w, tie, u: start, v: v,});
+                heap.push(HeapItem {
+                    w,
+                    tie,
+                    u: start.clone(),
+                    v: v.clone(),
+                });
             }
         }
 
@@ -79,11 +100,12 @@ where
             if visited.contains(&edge.v) {
                 continue;
             }
-            mst_edges.push((edge.u, edge.v));
-            visited.insert(edge.v);
-            unvisited.remove(&edge.v);
 
-            if let Some(nbr2) = g.adj_outer.get(edge.v) {
+            mst_edges.push((edge.u.clone(), edge.v.clone()));
+            visited.insert(edge.v.clone());
+            nodes.remove(&edge.v);
+
+            if let Some(nbr2) = g.adj_outer.get(&edge.v) {
                 for (dst, attr2) in nbr2 {
                     if visited.contains(dst) {
                         continue;
@@ -99,151 +121,13 @@ where
                     heap.push(HeapItem {
                         w: new_weight,
                         tie,
-                        u: edge.v,
-                        v: dst,
+                        u: edge.v.clone(),
+                        v: dst.clone(),
                     });
                 }
             }
         }
     }
-    
     Ok(mst_edges)
 }
 
-// V2 with several improvements
-// 1. Index Mapping instead of HashMaps
-// 2. Fix &&a'n
-// 3.
-
-#[derive(Debug)]
-struct HeapItemIdx {
-    w: f64,
-    tie: u64,
-    u: usize,
-    v: usize,
-}
-
-impl PartialEq for HeapItemIdx {
-    fn eq(&self, other: &Self) -> bool {
-        self.w.to_bits() == other.w.to_bits() && self.tie == other.tie
-    }
-}
-impl Eq for HeapItemIdx {}
-
-impl PartialOrd for HeapItemIdx {
-    fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
-        Some(self.cmp(other))
-    }
-}
-
-impl Ord for HeapItemIdx {
-    fn cmp(&self, other: &Self) -> std::cmp::Ordering {
-        other.w.total_cmp(&self.w).then_with(|| other.tie.cmp(&self.tie))
-    }
-}
-
-
-pub fn prim_mst_edges_v2<'a, N>(
-    g: &'a Graph<N>,
-    weight_key: &str,
-    ignore_nan: bool,
-) -> Result<Vec<(&'a N, &'a N)>, String>
-where
-    N: Eq + Hash + Debug + Clone,
-{
-    
-    let nodes: Vec<&'a N> = g.node.keys().collect();
-
-    let mut idx_of: HashMap<&'a N, usize> = HashMap::with_capacity(nodes.len());
-    for (i, &node) in nodes.iter().enumerate() {
-        idx_of.insert(node, i);
-    }
-
-    let mut visited = vec![false; nodes.len()];
-    let mut mst_edges: Vec<(&'a N, &'a N)> = Vec::with_capacity(nodes.len().saturating_sub(1));
-    let mut tie: u64 = 0;
-
-    // handle disconnected graphs: start Prim from each component
-    let mut start_i = 0;
-    while start_i < nodes.len() {
-        while start_i < nodes.len() && visited[start_i] {
-            start_i += 1;
-        }
-        if start_i == nodes.len() {
-            break;
-        }
-
-        visited[start_i] = true;
-        let start = nodes[start_i];
-
-        let mut heap: BinaryHeap<HeapItemIdx> = BinaryHeap::new();
-
-        if let Some(nbr) = g.adj_outer.get(start) {
-            for (v, attr) in nbr {
-                let w = g.get_weight(attr, weight_key).unwrap_or(1.0);
-                if w.is_nan() {
-                    if ignore_nan {
-                        continue;
-                    }
-                    return Err(format!("NaN edge weight found: {:?} -> {:?}", start, v));
-                }
-
-                let vi = *idx_of
-                    .get(v)
-                    .ok_or_else(|| format!("Neighbor not found in node index: {:?}", v))?;
-
-                if visited[vi] {
-                    continue;
-                }
-
-                tie += 1;
-                heap.push(HeapItemIdx {
-                    w,
-                    tie,
-                    u: start_i,
-                    v: vi,
-                });
-            }
-        }
-
-        while let Some(edge) = heap.pop() {
-            if visited[edge.v] {
-                continue;
-            }
-
-            visited[edge.v] = true;
-            mst_edges.push((nodes[edge.u], nodes[edge.v]));
-
-            let vref = nodes[edge.v];
-            if let Some(nbr2) = g.adj_outer.get(vref) {
-                for (dst, attr2) in nbr2 {
-                    let di = *idx_of
-                        .get(dst)
-                        .ok_or_else(|| format!("Neighbor not found in node index: {:?}", dst))?;
-
-                    if visited[di] {
-                        continue;
-                    }
-
-                    let new_weight = g.get_weight(attr2, weight_key).unwrap_or(1.0);
-                    if new_weight.is_nan() {
-                        if ignore_nan {
-                            continue;
-                        }
-                        return Err(format!("NaN edge weight found: {:?} -> {:?}", vref, dst));
-                    }
-
-                    tie += 1;
-                    heap.push(HeapItemIdx {
-                        w: new_weight,
-                        tie,
-                        u: edge.v,
-                        v: di,
-                    });
-                }
-            }
-        }
-    }
-
-    Ok(mst_edges)
-}
