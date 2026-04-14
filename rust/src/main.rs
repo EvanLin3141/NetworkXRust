@@ -6,6 +6,8 @@ mod utils;
 mod graph_loader;
 mod digraph_loader;
 
+
+
 use std::path::PathBuf;
 use std::time::Instant;
 
@@ -17,18 +19,25 @@ use crate::graph::nx_graph::Graph;
 use crate::graph::nx_digraph::DiGraph;
 
 use traversal::dfs::dfs_edges;
+use traversal::dfs_nx::dfs_edges_nx;
 use traversal::dfs::dfs_edges_digraph;
 
 use traversal::bfs::bfs_edges;
+use traversal::bfs_nx::bfs_edges_nx;
 use traversal::bfs::bfs_edges_digraph;
 
 use shortest_path::mst::prim_mst_edges;
+use shortest_path::mst_nx::prim_mst_edges_nx;
 
 use shortest_path::dijkstra::dijkstra_path;
 use shortest_path::dijkstra::dijkstra_path_digraph;
 
 use shortest_path::floyd::floyd_warshall;
+use shortest_path::floyd::floyd_warshall_nx;
 use shortest_path::floyd::floyd_warshall_digraph;
+
+#[cfg(test)]
+mod tests;
 
 #[allow(unused)]
 fn graph_path(filename: &str) -> PathBuf {
@@ -36,6 +45,33 @@ fn graph_path(filename: &str) -> PathBuf {
         .join("graphs")
         .join(filename)
 }
+
+#[allow(unused)]
+fn run_all_algorithms_nx(graph_name: &str, g: &crate::graph::nx_graph::Graph<String>) {
+    println!("\n==============================");
+    println!("Running algorithms on NX Architecture with {graph_name}");
+    println!("==============================");
+
+    let source = "0".to_string();
+    let dst = "500".to_string();
+
+    let start = Instant::now();
+    let _ = dfs_edges_nx(g, Some(source.clone()), None);
+    println!("DFS vectors -> {:?}", start.elapsed());
+
+    let start = Instant::now();
+    let _ = bfs_edges_nx(g, Some(source.clone()), None);
+    println!("BFS Vector -> {:?}", start.elapsed());
+
+    let start = Instant::now();
+    let _ = prim_mst_edges_nx(g, "weight", false);
+    println!("Prims w/ Vectors -> {:?}", start.elapsed());
+
+    let start = Instant::now();
+    let _ = floyd_warshall_nx(g, "weight").unwrap();
+    println!("Floyd-Warshall -> {:?}", start.elapsed());
+}
+
 #[allow(unused)]
 fn run_all_algorithms(graph_name: &str, g: &crate::graph::nx_graph::Graph<String>) {
     println!("\n==============================");
@@ -127,6 +163,10 @@ fn main() {
 
     println!("Directed Graph Loading");
 
+    run_all_algorithms_nx("Sparse Graph", &sparse);
+    run_all_algorithms_nx("Medium Graph", &medium);
+    run_all_algorithms_nx("Dense Graph", &dense); 
+
     run_all_algorithms("Sparse Graph", &sparse);
     run_all_algorithms("Medium Graph", &medium);
     run_all_algorithms("Dense Graph", &dense);
@@ -147,64 +187,3 @@ fn main() {
     run_all_algorithms_directed("Directed Dense Graph", &d_dense);
 }
 
-#[test]
-fn test_floyd_warshall_v3_sample() {
-    let mut g = Graph::<&str>::new(vec![]);
-
-    g.add_node("A", vec![]);
-    g.add_node("B", vec![]);
-    g.add_node("C", vec![]);
-    g.add_node("D", vec![]);
-
-    g.add_edge("A", "B", [("weight".to_string(), AttrValue::Int(3))]);
-    g.add_edge("A", "C", [("weight".to_string(), AttrValue::Int(10))]);
-    g.add_edge("B", "C", [("weight".to_string(), AttrValue::Int(1))]);
-    g.add_edge("B", "D", [("weight".to_string(), AttrValue::Int(2))]);
-    g.add_edge("C", "D", [("weight".to_string(), AttrValue::Int(4))]);
-
-    let (pred, dist, nodes) = floyd_warshall_v3(&g, "weight").unwrap();
-
-    println!("nodes = {:?}", nodes);
-    println!("dist = {:?}", dist);
-    println!("pred = {:?}", pred);
-
-    // Since HashMap order is not stable, map node names to indices first
-    let mut idx = std::collections::HashMap::new();
-    for (i, node) in nodes.iter().enumerate() {
-        idx.insert(**node, i);
-    }
-
-    let a = idx["A"];
-    let b = idx["B"];
-    let c = idx["C"];
-    let d = idx["D"];
-
-    // Expected shortest distances
-    assert_eq!(dist[a][a], 0.0);
-    assert_eq!(dist[a][b], 3.0);
-    assert_eq!(dist[a][c], 4.0); // A -> B -> C
-    assert_eq!(dist[a][d], 5.0); // A -> B -> D
-
-    assert_eq!(dist[b][a], 3.0);
-    assert_eq!(dist[b][b], 0.0);
-    assert_eq!(dist[b][c], 1.0);
-    assert_eq!(dist[b][d], 2.0);
-
-    assert_eq!(dist[c][a], 4.0); // C -> B -> A
-    assert_eq!(dist[c][b], 1.0);
-    assert_eq!(dist[c][c], 0.0);
-    assert_eq!(dist[c][d], 3.0); // C -> B -> D
-
-    assert_eq!(dist[d][a], 5.0); // D -> B -> A
-    assert_eq!(dist[d][b], 2.0);
-    assert_eq!(dist[d][c], 3.0); // D -> B -> C
-    assert_eq!(dist[d][d], 0.0);
-
-    // Optional predecessor checks
-    assert_eq!(pred[a][b], Some(a));
-    assert_eq!(pred[a][c], Some(b));
-    assert_eq!(pred[a][d], Some(b));
-
-    assert_eq!(pred[c][a], Some(b));
-    assert_eq!(pred[c][d], Some(b));
-}
